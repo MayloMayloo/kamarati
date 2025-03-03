@@ -1,0 +1,765 @@
+"use client"
+
+import { useRef, useState, useEffect } from "react"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { ArrowRight, Bell } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Input } from "@/components/ui/input"
+
+// Add this new component for the chat interface
+const ChatInterface = ({ name, onClose }) => {
+  const [messages, setMessages] = useState([])
+  const [input, setInput] = useState("")
+  const [isTyping, setIsTyping] = useState(false)
+
+  const handleSend = async (e) => {
+    e.preventDefault()
+    if (input.trim()) {
+      setMessages((prev) => [...prev, { sender: "user", text: input }])
+      setInput("")
+      setIsTyping(true)
+
+      // Simulate AI response
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: input, character: name }),
+        })
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        const data = await response.json()
+        setMessages((prev) => [...prev, { sender: name, text: data.response }])
+      } catch (error) {
+        console.error("Error fetching AI response:", error)
+        setMessages((prev) => [...prev, { sender: name, text: "Prepáčte, vyskytla sa chyba. Skúste to znova neskôr." }])
+      }
+
+      setIsTyping(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-[400px]">
+      <ScrollArea className="flex-grow p-4 space-y-4">
+        {messages.map((msg, index) => (
+          <div key={index} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`rounded-lg p-2 max-w-[70%] ${msg.sender === "user" ? "bg-[#6B4423] text-[#E6D5C0]" : "bg-[#E6D5C0] text-[#2C1810]"}`}
+            >
+              {msg.text}
+            </div>
+          </div>
+        ))}
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="bg-[#E6D5C0] text-[#2C1810] rounded-lg p-2">{name} píše...</div>
+          </div>
+        )}
+      </ScrollArea>
+      <form onSubmit={handleSend} className="flex p-4 border-t">
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Napíš správu..."
+          className="flex-grow mr-2"
+        />
+        <Button type="submit">Poslať</Button>
+      </form>
+    </div>
+  )
+}
+
+export default function Home() {
+  const galleryRef = useRef<HTMLElement>(null)
+  const [selectedFriend, setSelectedFriend] = useState<string | null>(null)
+  const [isPotiDialogOpen, setIsPotiDialogOpen] = useState(false)
+  const [isHutisDialogOpen, setIsHutisDialogOpen] = useState(false)
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatPartner, setChatPartner] = useState("")
+
+  const scrollToGallery = () => {
+    galleryRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50)
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  const friendsInfo = {
+    nojpa: {
+      name: "Nojpa",
+      description: "Priateľský troll s veľkými ušami a ešte väčším srdcom.",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-Bn5i42E28iRCxtdr2cSlWMp8O4sNfh.png",
+      color: "from-[#2C1810] to-[#6B4423]",
+      buttonText: "Vybrať Nojpu",
+    },
+    poti: {
+      name: "Poti",
+      description: "Extrémne holohlavý kamarát s lesklou hlavou a veľkým srdcom.",
+      image:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%7BF9FA727A-3C4F-472E-9E40-0A1609F886DC%7D-fNeKg9vVdsxi9AO3yt0CTRA8kGmdrj.png",
+      color: "from-[#2C1810] to-[#6B4423]",
+      buttonText: "Vybrať Potiho",
+    },
+    hutis: {
+      name: "Hutís",
+      description: "Nízkorozpočtový Spider-Man a študent Avengers školy s talentom na kreslenie.",
+      image: "/placeholder.svg", // Nahraďte skutočným obrázkom Hutísa
+      color: "from-[#2C1810] to-[#6B4423]",
+      buttonText: "Vybrať Hutísa",
+    },
+  }
+
+  const updateLogs = [
+    {
+      date: "22.2.2025",
+      updates: [
+        "Pridaná sekcia 'Naši Kamaráti' na hlavnej stránke",
+        "Aktualizované podmienky používania",
+        "Zmenený copyright rok na 2025",
+      ],
+    },
+    {
+      date: "15.1.2025",
+      updates: ["Pridaný nový kamarát Hutís", "Vylepšená responzívnosť dizajnu"],
+    },
+    {
+      date: "1.12.2024",
+      updates: ["Spustená webová stránka Nojpa a Kamaráti", "Predstavení kamaráti Nojpa a Poti"],
+    },
+  ]
+
+  return (
+    <div className="flex flex-col min-h-screen bg-[#F5F0E8]">
+      {!selectedFriend ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-[#2C1810] to-[#6B4423]">
+          <h1 className="text-4xl md:text-6xl font-bold mb-12 text-[#E6D5C0] text-center">Vyber si svojho kamaráta</h1>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl">
+            {Object.entries(friendsInfo).map(([key, friend]) => (
+              <Card
+                key={key}
+                className={`cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-br ${friend.color}`}
+                onClick={() => setSelectedFriend(key)}
+              >
+                <CardContent className="p-6 flex flex-col items-center">
+                  <div className="relative w-48 h-48 mb-6 rounded-full overflow-hidden border-4 border-[#E6D5C0]">
+                    <Image src={friend.image || "/placeholder.svg"} alt={friend.name} fill className="object-cover" />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-2 text-[#E6D5C0]">{friend.name}</h2>
+                  <p className="text-[#E6D5C0]/90 text-center">{friend.description}</p>
+                  <Button className="mt-4 bg-[#E6D5C0] text-[#2C1810] hover:bg-[#E6D5C0]/80">
+                    {friend.buttonText}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col">
+          <header className="border-b bg-[#2C1810] sticky top-0 z-50">
+            <div className="container flex items-center justify-between h-14 px-4 md:px-6">
+              <span className="text-xl font-semibold text-[#E6D5C0]">
+                {selectedFriend ? friendsInfo[selectedFriend as keyof typeof friendsInfo].name : "Nojpa & Kamaráti"}
+              </span>
+              <nav className="flex items-center gap-4">
+                {selectedFriend && (
+                  <>
+                    <Button variant="ghost" className="text-[#E6D5C0] hover:text-[#E6D5C0]/80">
+                      O mne
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="text-[#E6D5C0] hover:text-[#E6D5C0]/80"
+                      onClick={scrollToGallery}
+                    >
+                      Galéria
+                    </Button>
+                    <Button
+                      className="bg-[#6B4423] hover:bg-[#8B5E3C] text-[#E6D5C0]"
+                      onClick={() => setSelectedFriend(null)}
+                    >
+                      Zmeniť kamaráta
+                    </Button>
+                  </>
+                )}
+                <Dialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-[#E6D5C0] hover:text-[#E6D5C0]/80">
+                      <Bell className="h-5 w-5" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-[#F5F0E8] text-[#2C1810] sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-bold text-[#6B4423]">Aktualizácie</DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="mt-4 max-h-[60vh]">
+                      {updateLogs.map((log, index) => (
+                        <div key={index} className="mb-6">
+                          <h3 className="font-bold text-[#2C1810] mb-2">{log.date}</h3>
+                          <ul className="list-disc list-inside text-[#6B4423]">
+                            {log.updates.map((update, updateIndex) => (
+                              <li key={updateIndex}>{update}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </ScrollArea>
+                  </DialogContent>
+                </Dialog>
+              </nav>
+            </div>
+          </header>
+          <main className="flex-1">
+            {selectedFriend === "nojpa" && (
+              <>
+                <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-[#2C1810] to-[#6B4423]">
+                  <div className="container px-4 md:px-6">
+                    <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
+                      <div className="flex flex-col justify-center space-y-4">
+                        <div className="space-y-2">
+                          <Badge variant="secondary" className="inline-block bg-[#8B5E3C] text-[#E6D5C0]">
+                            Spoznaj Svojho Nového Kamaráta
+                          </Badge>
+                          <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-[#E6D5C0]">
+                            Objav Nojpu: Priateľského Trolla
+                          </h1>
+                          <p className="max-w-[600px] text-[#E6D5C0]/90 md:text-xl">
+                            Jedinečný troll s veľkými ušami a srdcom zo zlata. Malý vzrastom, ale veľký osobnosťou!
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button size="lg" className="bg-[#6B4423] hover:bg-[#8B5E3C] text-[#E6D5C0]">
+                                Dozvedieť sa viac
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-[#F5F0E8] text-[#2C1810]">
+                              <DialogHeader>
+                                <DialogTitle>Vitaj! Ja som Nojpa</DialogTitle>
+                              </DialogHeader>
+                              <div className="grid gap-4">
+                                <div className="relative h-60 w-full">
+                                  <Image
+                                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-8WmjoSSRUxHZsNQGQOVnPilzGui4y1.png"
+                                    alt="Nojpa sa predstavuje"
+                                    fill
+                                    className="object-contain"
+                                  />
+                                </div>
+                                <p className="text-[#6B4423]">
+                                  Ahoj! Som Nojpa, váš nový kamarát s veľkými ušami a ešte väčším srdcom. Možno nie som
+                                  najvyšší, ale som expert na počúvanie a vždy pripravený na nové dobrodružstvá!
+                                </p>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                          <Button
+                            size="lg"
+                            onClick={scrollToGallery}
+                            className="bg-[#8B5E3C] hover:bg-[#6B4423] text-[#E6D5C0] border-2 border-[#E6D5C0]/20"
+                          >
+                            Pozrieť galériu
+                          </Button>
+                          <Button
+                            size="lg"
+                            className="bg-[#6B4423] hover:bg-[#8B5E3C] text-[#E6D5C0]"
+                            onClick={() => {
+                              setChatPartner(friendsInfo[selectedFriend as keyof typeof friendsInfo].name)
+                              setChatOpen(true)
+                            }}
+                          >
+                            Porozprávaj sa s Nojpom
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center">
+                        <div className="relative w-[300px] h-[400px] md:w-[400px] md:h-[500px]">
+                          <Image
+                            alt="Nojpa troll"
+                            className="object-contain rounded-lg"
+                            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-Bn5i42E28iRCxtdr2cSlWMp8O4sNfh.png"
+                            fill
+                            priority
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section ref={galleryRef} className="w-full py-12 bg-[#E6D5C0] scroll-mt-14">
+                  <div className="container px-4 md:px-6">
+                    <h2 className="text-2xl font-bold text-center mb-8 text-[#2C1810]">Galéria Nojpu</h2>
+                    <div className="grid gap-6 md:grid-cols-3">
+                      <Card className="bg-[#F5F0E8] shadow-lg hover:shadow-xl transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="relative aspect-square">
+                            <Image
+                              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-cffiWWceBaLfQMIZTvkDxS0VyywIJP.png"
+                              alt="Nojpa zozadu"
+                              fill
+                              className="object-cover rounded-lg"
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-[#F5F0E8] shadow-lg hover:shadow-xl transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="relative aspect-square">
+                            <Image
+                              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-8WmjoSSRUxHZsNQGQOVnPilzGui4y1.png"
+                              alt="Nojpa počúva"
+                              fill
+                              className="object-cover rounded-lg"
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-[#F5F0E8] shadow-lg hover:shadow-xl transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="relative aspect-square">
+                            <Image
+                              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-L8Yc0NkprCMJi7BzMubWEwDTZBqVA2.png"
+                              alt="Nojpa s čiapkou"
+                              fill
+                              className="object-cover rounded-lg"
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="w-full py-12 bg-[#F5F0E8]">
+                  <div className="container px-4 md:px-6">
+                    <h2 className="text-2xl font-bold text-center mb-8 text-[#2C1810]">Nojpove Špeciálne Vlastnosti</h2>
+                    <div className="grid gap-6 md:grid-cols-3">
+                      <Card className="bg-[#E6D5C0] shadow-md">
+                        <CardContent className="p-6">
+                          <h3 className="font-bold mb-2 text-[#2C1810]">Veľké Priateľské Uši</h3>
+                          <p className="text-[#6B4423]">
+                            Dokonalé na počúvanie všetkých vašich príbehov a dobrodružstiev
+                          </p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-[#E6D5C0] shadow-md">
+                        <CardContent className="p-6">
+                          <h3 className="font-bold mb-2 text-[#2C1810]">Kompaktná Veľkosť</h3>
+                          <p className="text-[#6B4423]">
+                            Malý, ale mocný, Nojpa dokazuje, že dobré veci prichádzajú v malých baleniach
+                          </p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-[#E6D5C0] shadow-md">
+                        <CardContent className="p-6">
+                          <h3 className="font-bold mb-2 text-[#2C1810]">Ľudský Vzhľad</h3>
+                          <p className="text-[#6B4423]">Priateľská tvár, ktorá spája svet trollov a ľudí</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </section>
+              </>
+            )}
+
+            {selectedFriend === "poti" && (
+              <>
+                <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-[#2C1810] to-[#6B4423]">
+                  <div className="container px-4 md:px-6">
+                    <div className="flex flex-col items-center text-center">
+                      <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-[#E6D5C0] mb-4">
+                        Spoznajte Potiho
+                      </h1>
+                      <p className="max-w-[600px] text-[#E6D5C0]/90 md:text-xl mb-8">
+                        Náš extrémne holohlavý kamarát s lesklou hlavou a veľkým srdcom!
+                      </p>
+                    </div>
+
+                    <div className="mt-8">
+                      <h2 className="text-2xl font-bold text-center mb-12 text-[#E6D5C0]">
+                        Potiho Časová Os (aj do budúcnosti!)
+                      </h2>
+                      <div className="relative">
+                        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-[#E6D5C0]/20 transform -translate-y-1/2" />
+                        <div className="relative z-10 flex justify-between items-center max-w-4xl mx-auto">
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="relative w-48 h-48 rounded-lg overflow-hidden border-4 border-[#E6D5C0]">
+                              <Image
+                                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%7BF9FA727A-3C4F-472E-9E40-0A1609F886DC%7D-fNeKg9vVdsxi9AO3yt0CTRA8kGmdrj.png"
+                                alt="Poti v roku 2025"
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="bg-[#E6D5C0] text-[#2C1810] px-4 py-2 rounded-full">Poti 2025</div>
+                            <p className="text-[#E6D5C0] text-center text-sm max-w-[200px]">
+                              Štýlový a sebavedomý, s cool slnečnými okuliarmi
+                            </p>
+                          </div>
+                          <ArrowRight className="w-12 h-12 text-[#E6D5C0]" />
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="relative w-48 h-48 rounded-lg overflow-hidden border-4 border-[#E6D5C0]">
+                              <Image
+                                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-81PYF7XhZqHbFvq9DwmCLTm1nSVJio.png"
+                                alt="Poti v roku 2068"
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="bg-[#E6D5C0] text-[#2C1810] px-4 py-2 rounded-full">Poti 2068</div>
+                            <p className="text-[#E6D5C0] text-center text-sm max-w-[200px]">
+                              Legendárny mudrc s dokonale vyleštenou hlavou
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-center mt-8 space-x-4">
+                      <Button
+                        size="lg"
+                        onClick={scrollToGallery}
+                        className="bg-[#8B5E3C] hover:bg-[#6B4423] text-[#E6D5C0] border-2 border-[#E6D5C0]/20"
+                      >
+                        Pozrieť galériu
+                      </Button>
+                      <Button
+                        size="lg"
+                        className="bg-[#6B4423] hover:bg-[#8B5E3C] text-[#E6D5C0]"
+                        onClick={() => {
+                          setChatPartner(friendsInfo[selectedFriend as keyof typeof friendsInfo].name)
+                          setChatOpen(true)
+                        }}
+                      >
+                        Porozprávaj sa s Potim
+                      </Button>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="w-full py-12 bg-[#E6D5C0]">
+                  <div className="container px-4 md:px-6">
+                    <h2 className="text-2xl font-bold text-center mb-8 text-[#2C1810]">Potiho Špeciálne Vlastnosti</h2>
+                    <div className="grid gap-6 md:grid-cols-3">
+                      <Card className="bg-[#F5F0E8] shadow-lg hover:shadow-xl transition-shadow">
+                        <CardContent className="p-6">
+                          <h3 className="font-bold mb-2 text-[#2C1810]">Extrémna Holohlavosť</h3>
+                          <p className="text-[#6B4423]">
+                            Potiho hlava je tak lesklá, že sa v nej môžete vidieť ako v zrkadle!
+                          </p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-[#F5F0E8] shadow-lg hover:shadow-xl transition-shadow">
+                        <CardContent className="p-6">
+                          <h3 className="font-bold mb-2 text-[#2C1810]">Úspora na Šampóne</h3>
+                          <p className="text-[#6B4423]">
+                            Poti nikdy nemíňa peniaze na šampón. Ekologické a ekonomické!
+                          </p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-[#F5F0E8] shadow-lg hover:shadow-xl transition-shadow">
+                        <CardContent className="p-6">
+                          <h3 className="font-bold mb-2 text-[#2C1810]">Aerodynamický Dizajn</h3>
+                          <p className="text-[#6B4423]">
+                            Vďaka svojej hladkej hlave je Poti neuveriteľne rýchly pri behu!
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="w-full py-12 bg-[#F5F0E8]">
+                  <div className="container px-4 md:px-6 text-center">
+                    <h2 className="text-2xl font-bold mb-4 text-[#2C1810]">Potiho Denná Rutina</h2>
+                    <p className="text-[#6B4423] mb-8 max-w-2xl mx-auto">
+                      Namiesto česania vlasov Poti každé ráno leští svoju hlavu. Je to jeho tajomstvo k žiarivému
+                      vzhľadu a pozitívnemu prístupu k životu!
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto text-left">
+                      <div>
+                        <h3 className="font-bold mb-2 text-[#2C1810]">Potiho Súčasné Tipy:</h3>
+                        <ul className="list-disc list-inside text-[#6B4423] space-y-2">
+                          <li>Štýlové slnečné okuliare sú must-have</li>
+                          <li>Graffiti tričká pre urban look</li>
+                          <li>Každodenné leštenie pre extra shine</li>
+                          <li>Sebavedomie je najlepší doplnok</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h3 className="font-bold mb-2 text-[#2C1810]">Potiho Vízia 2068:</h3>
+                        <ul className="list-disc list-inside text-[#6B4423] space-y-2">
+                          <li>Dosiahnutie statusu holohlavého mudrca</li>
+                          <li>Založenie akadémie leštenia hlavy</li>
+                          <li>Vydanie knihy "Cesta k dokonalej holohlavosti"</li>
+                          <li>Inšpirovanie ďalšej generácie holohlavcov</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </>
+            )}
+
+            {selectedFriend === "hutis" && (
+              <>
+                <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-[#2C1810] to-[#6B4423]">
+                  <div className="container px-4 md:px-6">
+                    <div className="flex flex-col items-center text-center">
+                      <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-[#E6D5C0] mb-4">
+                        Spoznajte Hutísa
+                      </h1>
+                      <p className="max-w-[600px] text-[#E6D5C0]/90 md:text-xl mb-8">
+                        Tiež známy ako Hutís Platís Atlantís, Huto, Hútnica - náš nízkorozpočtový Spider-Man a študent
+                        Avengers školy s talentom na kreslenie!
+                      </p>
+                    </div>
+                    <div className="flex justify-center mt-8 space-x-4">
+                      <Button
+                        size="lg"
+                        onClick={scrollToGallery}
+                        className="bg-[#8B5E3C] hover:bg-[#6B4423] text-[#E6D5C0] border-2 border-[#E6D5C0]/20"
+                      >
+                        Pozrieť galériu
+                      </Button>
+                      <Button
+                        size="lg"
+                        className="bg-[#6B4423] hover:bg-[#8B5E3C] text-[#E6D5C0]"
+                        onClick={() => {
+                          setChatPartner(friendsInfo[selectedFriend as keyof typeof friendsInfo].name)
+                          setChatOpen(true)
+                        }}
+                      >
+                        Porozprávaj sa s Hutísom
+                      </Button>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="w-full py-12 bg-[#E6D5C0]">
+                  <div className="container px-4 md:px-6">
+                    <h2 className="text-2xl font-bold text-center mb-8 text-[#2C1810]">
+                      Hutísove Špeciálne Vlastnosti
+                    </h2>
+                    <div className="grid gap-6 md:grid-cols-3">
+                      <Card className="bg-[#F5F0E8] shadow-lg hover:shadow-xl transition-shadow">
+                        <CardContent className="p-6">
+                          <h3 className="font-bold mb-2 text-[#2C1810]">Nízkorozpočtový Superhrdina</h3>
+                          <p className="text-[#6B4423]">
+                            Hutís dokazuje, že nepotrebujete drahý oblek na záchranu sveta!
+                          </p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-[#F5F0E8] shadow-lg hover:shadow-xl transition-shadow">
+                        <CardContent className="p-6">
+                          <h3 className="font-bold mb-2 text-[#2C1810]">Študent Avengers Školy</h3>
+                          <p className="text-[#6B4423]">
+                            Učí sa od najlepších, aj keď občas zaspí na prednáškach o lietaní.
+                          </p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-[#F5F0E8] shadow-lg hover:shadow-xl transition-shadow">
+                        <CardContent className="p-6">
+                          <h3 className="font-bold mb-2 text-[#2C1810]">Majster Improvizácie a Kreslenia</h3>
+                          <p className="text-[#6B4423]">
+                            Kto potrebuje high-tech vybavenie, keď máte šikovné ruky, dobrú predstavivosť a talent na
+                            kreslenie?
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="w-full py-12 bg-[#F5F0E8]">
+                  <div className="container px-4 md:px-6 text-center">
+                    <h2 className="text-2xl font-bold mb-4 text-[#2C1810]">Hutísov Denný Rozvrh</h2>
+                    <p className="text-[#6B4423] mb-8 max-w-2xl mx-auto">
+                      Od ranného tréningu pavúčích skokov až po večerné patrolovanie mesta s domácky vyrobeným vybavením
+                      a kreslenie komiksov o svojich dobrodružstvách.
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto text-left">
+                      <div>
+                        <h3 className="font-bold mb-2 text-[#2C1810]">Hutísove Superschopnosti:</h3>
+                        <ul className="list-disc list-inside text-[#6B4423] space-y-2">
+                          <li>Lepenie na steny pomocou lepiacej pásky</li>
+                          <li>Vystrelenie pavučiny (vlastne je to len špagát)</li>
+                          <li>Superrýchle prezliekanie do kostýmu (za 5 minút)</li>
+                          <li>Nekonečný optimizmus a odhodlanie</li>
+                          <li>Kreslenie komiksových scén v rekordnom čase</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h3 className="font-bold mb-2 text-[#2C1810]">Hutísove Plány do Budúcnosti:</h3>
+                        <ul className="list-disc list-inside text-[#6B4423] space-y-2">
+                          <li>Absolvovať Avengers školu (aj keď to bude trvať dlhšie)</li>
+                          <li>Vynájsť skutočnú pavučinu (zatiaľ používa špagáty)</li>
+                          <li>Získať aspoň jedného skutočného superpadúcha</li>
+                          <li>Naučiť sa lietať (alebo aspoň elegantne padať)</li>
+                          <li>Vydať vlastný komiksový seriál o svojich dobrodružstvách</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </>
+            )}
+
+            {/* Updated "Naši Kamaráti" section */}
+            {isScrolled && (
+              <section className="w-full py-12 bg-[#E6D5C0]">
+                <div className="container px-4 md:px-6">
+                  <h2 className="text-2xl font-bold text-center mb-8 text-[#2C1810]">Naši Kamaráti</h2>
+                  <div className="flex flex-col gap-6 max-w-md mx-auto">
+                    {Object.entries(friendsInfo)
+                      .filter(([key]) => key !== selectedFriend)
+                      .map(([key, friend]) => (
+                        <Card key={key} className="bg-[#F5F0E8] shadow-lg hover:shadow-xl transition-shadow">
+                          <CardContent className="p-6 flex flex-col items-center">
+                            <div className="relative w-20 h-20 mb-4">
+                              <Image
+                                src={friend.image || "/placeholder.svg"}
+                                alt={friend.name}
+                                fill
+                                className="object-cover rounded-full"
+                              />
+                            </div>
+                            <h3 className="font-bold text-lg mb-1 text-[#2C1810]">{friend.name}</h3>
+                            <p className="text-[#6B4423] text-sm mb-2 text-center">{friend.description}</p>
+                            <div className="flex flex-col w-full gap-2">
+                              <Button
+                                className="w-full bg-[#6B4423] hover:bg-[#8B5E3C] text-[#E6D5C0]"
+                                onClick={() => setSelectedFriend(key)}
+                              >
+                                {friend.buttonText}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="w-full border-[#6B4423] text-[#6B4423] hover:bg-[#6B4423] hover:text-[#E6D5C0]"
+                                disabled={true}
+                              >
+                                Porozprávaj sa s{" "}
+                                {friend.name === "Nojpa" ? "Nojpom" : friend.name === "Poti" ? "Potim" : "Hutísom"}
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </div>
+              </section>
+            )}
+          </main>
+          <footer className="border-t bg-[#2C1810] text-[#E6D5C0]">
+            <div className="container flex items-center justify-between h-14 px-4 md:px-6">
+              <span className="text-sm text-[#E6D5C0]/80">© 2025 Nojpa & Priatelia. Všetky práva vyhradené.</span>
+              <nav className="flex items-center gap-4">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-[#E6D5C0]/80 hover:text-[#E6D5C0]">
+                      Súkromie
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-[#F5F0E8] text-[#2C1810] max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-bold text-[#6B4423]">Zásady ochrany súkromia</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-4 text-[#8B4513] max-h-[60vh] overflow-y-auto">
+                      <p className="mb-4">Vážení návštevníci webovej stránky Nojpa a Kamaráti,</p>
+                      <p className="mb-4">
+                        Vaše súkromie je pre nás dôležité. Táto stránka nezhromažďuje žiadne osobné údaje. Používame len
+                        nevyhnutné cookies pre fungovanie stránky. Prezeraním tejto stránky súhlasíte s používaním
+                        týchto cookies.
+                      </p>
+                      <p>Pre viac informácií nás kontaktujte na adrese: nojpa@kamarati.sk</p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-[#E6D5C0]/80 hover:text-[#E6D5C0]">
+                      Podmienky
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-[#F5F0E8] text-[#2C1810] max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-bold text-[#6B4423]">Podmienky používania</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-4 text-[#8B4513] max-h-[60vh] overflow-y-auto">
+                      <p className="mb-4">
+                        NOJPA A KAMARÁTI Inc. NENESÚ ŽIADNU ZODPOVEDNOSŤ ZA AKÉKOĽVEK ŠKODY SPÔSOBENÉ VÁM ALEBO
+                        KOMUKOĽVEK INÉMU, KTO SI PREZERÁ TÚTO WEBOVÚ STRÁNKU. AKÉKOĽVEK ŠKODY SPÔSOBENÉ V SÚVISLOSTI S
+                        POUŽÍVANÍM TEJTO WEBOVEJ STRÁNKY NEBUDÚ HRADENÉ SPOLOČNOSŤOU NOJPA A KAMARÁTI Inc.
+                      </p>
+                      <p className="mb-4">Používaním tejto webovej stránky súhlasíte s nasledujúcimi podmienkami:</p>
+                      <ol className="list-decimal list-inside mb-4">
+                        <li className="mb-2">Obsah tejto stránky je určený len na zábavné účely.</li>
+                        <li className="mb-2">Nojpa, Poti, Hutís a všetky súvisiace postavy sú fiktívne.</li>
+                        <li className="mb-2">
+                          Akékoľvek podobnosti s reálnymi osobami alebo udalosťami sú čisto náhodné.
+                        </li>
+                        <li className="mb-2">
+                          Nepreberáme zodpovednosť za akékoľvek rozhodnutia alebo konania, ktoré urobíte na základe
+                          informácií z tejto stránky.
+                        </li>
+                        <li className="mb-2">
+                          Vyhradzujeme si právo kedykoľvek zmeniť obsah tejto stránky bez predchádzajúceho upozornenia.
+                        </li>
+                        <li className="mb-2">
+                          Zaväzujete sa, že nebudete používať túto stránku na nelegálne alebo nevhodné účely.
+                        </li>
+                        <li className="mb-2">
+                          Všetok obsah na tejto stránke je chránený autorskými právami a nesmie byť reprodukovaný bez
+                          nášho výslovného súhlasu.
+                        </li>
+                        <li className="mb-2">
+                          Akékoľvek spory vyplývajúce z používania tejto stránky budú riešené podľa zákonov Slovenskej
+                          republiky.
+                        </li>
+                        <li className="mb-2">
+                          Tieto podmienky používania sa môžu kedykoľvek zmeniť bez predchádzajúceho upozornenia.
+                        </li>
+                        <li className="mb-2">
+                          Používaním tejto stránky potvrdzujete, že ste si prečítali, porozumeli a súhlasíte s týmito
+                          podmienkami.
+                        </li>
+                        <li className="mb-2">
+                          Porušenie ktoréhokoľvek z týchto bodov môže viesť k právnym krokom voči vám.
+                        </li>
+                      </ol>
+                      <p>Ak nesúhlasíte s týmito podmienkami, prosím, okamžite opustite túto webovú stránku.</p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </nav>
+            </div>
+          </footer>
+        </div>
+      )}
+      <Dialog open={chatOpen} onOpenChange={setChatOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Chat s {chatPartner}</DialogTitle>
+          </DialogHeader>
+          <ChatInterface name={chatPartner} onClose={() => setChatOpen(false)} />
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
